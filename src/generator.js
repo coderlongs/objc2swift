@@ -31,9 +31,9 @@ module.exports = (function(){
 		"long":"Int32", "unsigned long":"UInt32", "signed long":"Int32",
 		"long int":"Int32", "unsigned long int":"UInt32", "signed long int":"Int32",
 		"long long":"Int64", "unsigned long long":"UInt64", "signed long long":"Int64", 
-		"long long int":"Int64", "unsigned long long int":"UInt64", "signed long long int":"Int64", 
+		"long long int":"Int64", "unsigned long long int":"UInt64", "signed long long int":"Int64",
 		"NSInteger":"Int", "NSUInteger":"UInt",
-		"id":"AnyObject", "NSArray":"[AnyObject]",'instancetype':"Self",		
+		"id":"Any", "NSArray":"[Any]",'instancetype':"Self","NSDictionary":"[AnyHashable:Any]"
 	};
 
   	var _trim = function(s) { 
@@ -229,10 +229,10 @@ module.exports = (function(){
 		return "import " + node.argument.name;
 	}
 
-	Generator.prototype.FunctionDefinition = function(node) {	
+	Generator.prototype.FunctionDefinition = function(node) {
 
 		var info = node._declInfo;
-		var result = "func" + (node.c1!=''?node.c1:' ') + info.name;
+		var result = "func" + (node.c1 != '' ? node.c1:' ') + info.name;
 
 		var buf = [];
 		for(var i=0;i<info.parameters.length;i++) {
@@ -252,6 +252,7 @@ module.exports = (function(){
 	Generator.prototype.generateProtocolPropertyDeclaration = function(propInfo) {
 		var prefix = '';
 		var suffix = "{ get set }";
+
 		if(0<=propInfo.attributes.indexOf('copy')) {
 			prefix += "@NSCopying ";
 		}
@@ -400,6 +401,9 @@ module.exports = (function(){
 				buf.push("}");
 
 			} else {
+				if(propInfo.outlet) {
+					prefix += propInfo.outlet;
+				}
 				if(0<=propInfo.attributes.indexOf('copy')) {
 					prefix += "@NSCopying ";
 				}
@@ -495,6 +499,10 @@ module.exports = (function(){
 		}
 
 		var param = info.parameters[0];
+
+		if(param.label == "copyWithZone") {
+			return "copy(with zone: NSZone? = nil)";
+		}
 
 		var buf = [(toInit?"init":param.label) + "(" + param.name + ":" + this.toSwiftType(param.type)];
 

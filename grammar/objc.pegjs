@@ -1608,13 +1608,22 @@ ParameterDeclaration = s:DeclarationSpecifiers d:(__ Declarator / __ AbstractDec
 	};
 };
 
-PropertyDeclaration = PropertyToken __ attr:PropertyAttributesDeclaration? __ decl:StructDeclaration {
+PropertyDeclaration = PropertyToken __ attr:PropertyAttributesDeclaration? __ outlet:PropertyOutletDeclaration? __ decl:StructDeclaration {
 	return {
 		type:"PropertyDeclaration",
 		attributes:attr,
 		declaration:decl,
+		outlet: outlet,
 	};
 }
+
+PropertyOutletDeclaration
+    = OutletCollectionLiteral {
+        return text();
+    }
+    / OutletLiteral {
+        return text();
+    }
 
 PropertyAttributesDeclaration 
 	= '(' m:(__ PropertyAttributesList)? __ ')' {
@@ -1656,6 +1665,10 @@ BooleanLiteral = $("@YES" / "@NO")
 String = $('"' ( EscapeSequence / [^\\"] )* '"')
 
 StringLiteral = $(('@' __)? String (__ ('@' __)? String)*)
+
+OutletLiteral = $("IBOutlet")
+
+OutletCollectionLiteral = $("IBOutletCollection" __ '(' __ TypeName __ ')')
 
 AngleString = $('<' ( EscapeSequence / [^\\>] )* '>')
 
