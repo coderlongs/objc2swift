@@ -350,7 +350,7 @@ module.exports = (function(){
 
 		var self = this;
 		function _makeNameAndType(propInfo, altName) {
-			return (altName?altName:propInfo.name) + ":" + self.toSwiftType(propInfo.type);
+			return (altName?altName:propInfo.name) + ": " + self.toSwiftType(propInfo.type);
 		};
 
 		for(i=0;i<properties.length;i++) {
@@ -401,8 +401,8 @@ module.exports = (function(){
 				buf.push("}");
 
 			} else {
-				if(propInfo.outlet) {
-					prefix += propInfo.outlet;
+				if(propInfo.isOutlet) {
+					prefix += "@IBOutlet ";
 				}
 				if(0<=propInfo.attributes.indexOf('copy')) {
 					prefix += "@NSCopying ";
@@ -492,22 +492,39 @@ module.exports = (function(){
 		return '';
 	};
 
+	let uikitOverriedMethodMap = {
+		"copyWithZone": "copy(with zone: NSZone? = nil)",
+		"viewWillAppear": "viewWillAppear(_ animated: Bool)",
+		"viewDidAppear": "viewDidAppear(_ animated: Bool)",
+		"viewWillDisappear": "viewWillDisappear(_ animated: Bool)",
+		"viewDidDisappear": "viewDidDisappear(_ animated: Bool)",
+	}
 	Generator.prototype.generateMethodSelector = function(info, toInit) {
 
 		if(!info.parameters||info.parameters.length==0) {
-			return (toInit?"init":info.name) + "()";			
+			return (toInit?"init":info.name) + "()";
 		}
 
 		var param = info.parameters[0];
 
-		if(param.label == "copyWithZone") {
-			return "copy(with zone: NSZone? = nil)";
-		}
+//		let result = uikitOverriedMethodMap[param.label];
+//
+//		if (result) {
+//			return result;
+//		}
+		var names = param.label.split("With")
 
-		var buf = [(toInit?"init":param.label) + "(" + param.name + ":" + this.toSwiftType(param.type)];
+		var buf = []
+
+		if (names.length > 1) {
+			buf.push((toInit?"init":names[0]) + "(with " + param.name + ":" + this.toSwiftType(param.type))
+		} else {
+			buf.push((toInit?"init":names[0]) + "(_ " + param.name + ":" + this.toSwiftType(param.type))
+		}
 
 		for(var i=1;i<info.parameters.length;i++) {
 			param = info.parameters[i];
+
 			if(param.label && param.label!=param.name) {
 				buf.push(param.label + " " + param.name + ":" + this.toSwiftType(param.type));
 			} else {
@@ -520,7 +537,7 @@ module.exports = (function(){
 
 	var _isInitializerMethod = function(info) {
 		if(info) {
-			return !info.isClassMethod && /^init(With)?/.test(info.name) && 
+			return !info.isClassMethod && /^init(With)?/.test(info.name) &&
 				info.returnType && 
 				(info.returnType.name == "id" || info.returnType.name == "instancetype");
 		} else {
@@ -915,7 +932,7 @@ module.exports = (function(){
 	};
 
 	Generator.prototype.SelectorExpression = function(node) {		
-		return this.convert('Selector("' + node.name + '")');
+		return this.convert('#selector(' + node.name + ')');
 	};
 
 	Generator.prototype.CastExpression = function(node) {

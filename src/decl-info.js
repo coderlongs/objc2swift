@@ -65,6 +65,13 @@ module.exports = (function(){
 		} else {
 			result.name = "";
 		}
+		let qualifiers = declarator.directDeclarator.qualifiers
+		for (var i=0; i<qualifiers.length; i++) {
+			let qualifier = qualifiers[i]
+			if (qualifier.type === "ArcBehaviourQualifier" && qualifier.token === "__weak") {
+				type.isWeak = true
+			}
+		}
 		result.type = type;
 
 		return result;
@@ -81,6 +88,9 @@ module.exports = (function(){
 				info.type.nullability = 'nullable';
 			} else if(0<=info.attributes.indexOf('nonnull')) {
 				info.type.nullability = 'nonnull';
+			}
+			if (node.outlet) {
+				info.isOutlet = true;
 			}
 			result.push(info);
 		});
@@ -116,7 +126,9 @@ module.exports = (function(){
 		}
 		return result;
 	};
-
+	let _viewControllerOverride = [
+		"viewDidLoad", "viewWillAppear:", "viewDidAppear:"
+	]
 	var _createObjectFromMethodDeclaration = function(node) {
 		var info = new DeclInfo(DeclInfo.KIND_METHOD);
 		info.name = node.selector.name;
@@ -131,6 +143,7 @@ module.exports = (function(){
 		}
 
 		info.isClassMethod = (node.type == "ClassMethodDeclaration");
+		info.isOverride = _viewControllerOverride.includes(info.name, 0)
 		return info;
 	};
 	DeclInfo.createObjectFromMethodDeclaration = _createObjectFromMethodDeclaration;
